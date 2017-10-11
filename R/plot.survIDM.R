@@ -13,10 +13,12 @@ plot.survIDM <- function(x = object, y = NULL, trans = "all", func = "distributi
     }
 
 
-    if (!class(object)[1] %in% c("AJ", "LIDA", "LDM", "PLDM", "tpIPCW", "CIF",
-                                 "cifIPCW", "soj", "sojIPCW")) {
+    if (!class(object)[1] %in% c("AJ", "LIDA", "LM", "PLM", "tpIPCW", "CIF",
+                                 "cifIPCW", "soj", "sojIPCW", "LMAJ",
+                                 "PLMAJ", "PAJ")) {
       stop("The argumment 'Object' must be of one of the following classes
-           'AJ', 'LIDA', 'LDM', 'PLDM', 'tpIPCW', 'CIF', 'cifIPCW', 'soj' or 'sojIPCW'")
+           'AJ', 'LIDA', 'LM', 'PLM', 'LMAJ', 'PLMAJ', 'PAJ', 'tpIPCW',
+           'CIF', 'cifIPCW', 'soj' or 'sojIPCW'")
     }
 
 
@@ -73,7 +75,8 @@ plot.survIDM <- function(x = object, y = NULL, trans = "all", func = "distributi
       #tp
       #----------------------
 
-      if (class(object)[1] %in% c("AJ", "LIDA", "LDM", "PLDM", "tpIPCW")) {
+      if (class(object)[1] %in% c("AJ", "LIDA", "LM", "PLM", "tpIPCW",
+                                  "LMAJ", "PLMAJ", "PAJ")) {
 
         if(is.null(ylab) & class(object)[1] != "tpIPCW")
           ylab <- bquote(paste(p[ij], "(", .(x$s), ",t)"))

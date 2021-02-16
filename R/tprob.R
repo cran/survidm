@@ -15,13 +15,23 @@
 #' \code{"LMAJ"}, \code{"PLMAJ"}, \code{"PAJ"}, \code{"IPCW"} and \code{"breslow"}.
 #' Defaults to \code{"AJ"}. The \code{"IPCW"} method
 #' is recommended to obtain conditional transition probabilities (i.e., with a
-#' quantitative term on the right hand side of formula).
+#' quantitative term on the right hand side of formula). The \code{"breslow"} method
+#' is based on a Cox's regression model (Cox, 1972) fitted marginally to each allowed
+#' transition, with the corresponding baseline hazard function estimated by the
+#' Breslow's method (Breslow, 1972).
 #' @param conf Provides pointwise confidence bands. Defaults to \code{FALSE}.
 #' @param conf.level Level of confidence. Defaults to 0.95 (corresponding to 95\%).
-#' @param conf.type Method to compute the confidence intervals.
-#' Transformation applied to compute confidence intervals. Possible choices
-#' are \code{"linear"}, \code{"log"}, \code{"log-log"} and \code{"bootstrap"}.
-#' Default is \code{"linear"}.
+#' @param conf.type Method to compute the confidence intervals. Depends on the
+#' choice of the estimation method of the transition probabilities. For
+#' Aalen-Johansen type estimators (\code{"AJ"}, \code{"LMAJ"}, \code{"PAJ"} and
+#' \code{"PLMAJ"}) possible choices are \code{"linear"}, \code{"log"} and
+#' \code{"log-log"}. Default is \code{"linear"}, providing the standard intervals
+#' curve +-k *se(curve), where k is determined from \code{"conf.int"}. The
+#' \code{"log"} option calculates the intervals based on the cumulative hazard or
+#' -log(survival). The \code{"log-log"} option uses the log hazard function or
+#' log(-log(survival)). For the remaining estimation methods (\code{"LIDA"},
+#' \code{"LM"}, \code{"PLM"}, \code{"IPCW"} and \code{"breslow"}) the percentile
+#' bootstrap which resamples each datum with probability 1/n is used.
 #' @param n.boot The number of bootstrap replicates to compute the variance
 #' of the non-Markovian estimator. Default is 199.
 #' @param data A data.frame including at least four columns named
@@ -57,7 +67,10 @@
 #'
 #' @details Possible options for argument window are \code{"gaussian"},
 #' \code{"epanechnikov"}, \code{"tricube"}, \code{"boxcar"},
-#' \code{"triangular"}, \code{"quartic"} or \code{"cosine"}.
+#' \code{"triangular"}, \code{"quartic"} or \code{"cosine"}. The LIDA estimator
+#' was labelled according to the acronym of the Lifetime Data Analysis journal
+#' in which the estimator was described for the first time (Meira-Machado,
+#' Uña-Álvarez and Cadarso-Suárez, 2006).
 #'
 
 #' Possible methods are:
@@ -111,13 +124,20 @@
 #' of transition probabilities in a non-Markov illness-death model:
 #' a comparative study. Biometrics 71, 364--375.
 #'
+#' Cox, DR (1972). Regression models and life tables (with discussion). Journal
+#' of the Royal Statistical Society, Series B 34, 187-200.
+#'
+#' Breslow, N. (1972). Discussion of paper by dr cox. Journal of Royal Statistical
+#' Society, Series B 34, 216-217.
+#'
 #'
 #' @examples
+#' \donttest{
 #' # Aalen-Johansen
 # Occupation Probabilities Pj(t)=Pij(0,t)
 
-#' res <- tprob(survIDM(time1, event1, Stime, event) ~ 1, s = 0, method = "AJ",
-#' conf = FALSE, data = colonIDM)
+#' res <- tprob(survIDM(time1, event1, Stime, event) ~ 1, s = 0,
+#' method = "AJ", conf = FALSE, data = colonIDM)
 
 #' summary(res, time=365*1:6)
 #' plot(res)
@@ -128,87 +148,83 @@
 #' res1 <- tprob(survIDM(time1, event1, Stime, event) ~ 1, s = 365,
 #'              method = "LIDA", conf = FALSE, data = colonIDM)
 #'
-#' summary(res1, time = 365*1:6)
+#' summary(res1, time=365*1:6)
 #' plot(res1)
-#' plot(res1, trans = "01", ylim = c(0,0.15))
+#' plot(res1, trans="01", ylim=c(0,0.15))
 
 #' # Landmark (LM)
 #' res2 <- tprob(survIDM(time1, event1, Stime, event) ~ 1, s = 365,
 #'               method = "LM", conf = FALSE, data = colonIDM)
 
-#' summary(res2, time = 365*1:6)
+#' summary(res2, time=365*1:6)
 #' plot(res2)
 
 #' # Presmoothed LM
 #' res3 <- tprob(survIDM(time1, event1, Stime, event) ~ 1, s = 365,
-#'               method = "PLM", conf = FALSE, data = colonIDM)
+#'               method = "PLM", conf = TRUE, data = colonIDM)
 
-#' summary(res3, time = 365*1:6)
-#' plot(res3)
+#' summary(res3, time=365*1:6)
+#' autoplot(res3, interactive = TRUE)
 
 #' # Conditional transition probabilities
 
 #' # With factor
 #' res4 <- tprob(survIDM(time1, event1, Stime, event) ~ factor(sex), s = 365,
-#'               method = "AJ", conf = FALSE, data = colonIDM)
-#' summary(res4, time = 365*1:6)
-#' plot(res4, trans = "02", ylim = c(0,0.5))
+#'               method = "AJ", conf = TRUE, data = colonIDM)
+#' summary(res4, time=365*1:6)
+#' plot(res4, trans="02", ylim=c(0,0.5))
 
-#' res5 <- tprob(survIDM(time1, event1, Stime, event) ~ rx, s = 365,
-#'               method = "breslow", z.value = 'Lev', conf = FALSE, data = colonIDM)
+#' res5 <- tprob(survIDM(time1, event1, Stime, event) ~ rx, s =365,
+#'               method = "breslow", z.value='Lev', conf = TRUE, data =colonIDM)
 
-#' summary(res5, time = 365*1:6)
-#' plot(res5,trans = "02", ylim = c(0,0.5))
+#' summary(res5, time=365*1:6)
+#' plot(res5,trans="02", ylim=c(0,0.5))
 
 
-#' \dontrun{# with continuous covariate (IPCW and Breslow Method)
+#' # with continuous covariate (IPCW and Breslow Method)
 #' res6 <- tprob(survIDM(time1, event1, Stime, event) ~ age, s = 365,
 #'               method = "IPCW", z.value = 48, conf = FALSE, data = colonIDM,
-#'              bw = "dpik", window = "gaussian", method.weights = "NW")
+#'               bw = "dpik", window = "gaussian", method.weights = "NW")
 
-#' summary(res6, time = 365*1:6)
+#' summary(res6, time=365*1:6)
 #' plot(res6)
 
-#' #res7 <- tprob(survIDM(time1, event1, Stime, event) ~ age, s =365,
-#' #             method = "breslow", z.value = 60, conf = FALSE,
-#' #               data = colonIDM)
+#' res7 <- tprob(survIDM(time1, event1, Stime, event) ~ age, s =365,
+#'               method = "breslow", z.value=60, conf = FALSE, data =colonIDM)
 
-#' summary(res7, time = 365*1:6)
-#' plot(res7)
+#' summary(res7, time=365*1:6)
+#' autoplot(res7, interactive=TRUE)
 
 #' res8 <- tprob(survIDM(time1, event1, Stime, event) ~ age, s =365,
-#'               method = "breslow", conf.type = 'bootstrap', n.boot = 2,
-#'               z.value = 60, conf = TRUE, data = colonIDM)
+#'               method = "breslow", conf.type='bootstrap', z.value=60, conf = TRUE, data =colonIDM)
 
-#' summary(res8, time = 365*1:6)
+#' summary(res8, time=365*1:6)
 #' plot(res8)
 
 #' res9 <- tprob(survIDM(time1, event1, Stime, event) ~ rx, s =365,
-#'               method = "breslow", conf.type='bootstrap',
-#'               conf = TRUE, data =colonIDM)
+#'               method = "breslow", conf.type='bootstrap',  conf = TRUE, data =colonIDM)
 
-#' summary(res9, time = 365*1:6)
-#' plot(res9, trans = "02", ylim = c(0,0.5))
+#' summary(res9, time=365*1:6)
+#' plot(res9, trans="02", ylim=c(0,0.5))
 
 #' # more than a covariate (Breslow Method)
-#' res10 <- tprob(survIDM(time1, event1, Stime, event) ~ nodes + factor(rx),
-#' s = 365, method = "breslow", conf = TRUE, data =colonIDM)
+#' res10<- tprob(survIDM(time1, event1, Stime, event) ~ nodes + factor(rx), s =365,
+#'               method = "breslow", conf = TRUE, data =colonIDM)
 
-#' summary(res10,t = 365*1:5)
-#' plot(res10)
+#' summary(res10,t=365*1:5)
+#' autoplot(res10)
 
-#' res11 <- tprob(survIDM(time1, event1, Stime, event) ~ nodes + factor(rx),
-#' s = 365, method = "breslow", z.value = c(10,'Obs'), conf = TRUE,
-#' data = colonIDM)
-#' summary(res11,t = 365*1:5)
-#' plot(res11)
+#' res11<- tprob(survIDM(time1, event1, Stime, event) ~ nodes + factor(rx), s =365,
+#'               method = "breslow", z.value=c(10,'Obs'), conf = TRUE, data =colonIDM)
+#' summary(res11,t=365*1:5)
+#' autoplot(res11)
 
 #' # more than a covariate for Non Linear Models (Breslow Method)
-#' res12 <- tprob(survIDM(time1, event1, Stime, event) ~ pspline(age) + nodes +
-#' factor(rx), s =365, method = "breslow", conf = TRUE, data = colonIDM)
+#' res12<- tprob(survIDM(time1, event1, Stime, event) ~ pspline(age)+ nodes + factor(rx), s =365,
+#'               method = "breslow", conf = TRUE, data =colonIDM)
 
-#' summary(res12,t = 365*1:5)
-#' plot(res12)
+#' summary(res12,t=365*1:5)
+#' autoplot(res12)
 
 #' # Confidence intervals
 #' res13 <- tprob(survIDM(time1, event1, Stime, event) ~ 1, s = 365,
@@ -216,15 +232,8 @@
 #'                conf.type = "log", data = colonIDM)
 
 #' summary(res13, time=365*1:7)
-#' plot(res13)
+#' autoplot(res13)}
 
-#' res14 <- tprob(survIDM(time1, event1, Stime, event) ~ pspline(age) + nodes +
-#' factor(rx), s =365, method = "breslow", conf.type = 'bootstrap', conf = TRUE,
-#' conf.level = 0.95,  data = colonIDM)
-
-#' summary(res14,t = 365*1:5)
-#' plot(res14)
-#' }
 
 tprob<-function(formula,
                 s,
@@ -246,7 +255,8 @@ tprob<-function(formula,
   if (missing(formula))
     stop("A formula argument is required")
   if (missing(s))
-    stop("argument 's' is missing, with no default")
+    #stop("argument 's' is missing, with no default")
+    s<-0
 
   if (!(method %in% c("AJ", "LIDA", "LM", "PLM", "IPCW", "LMAJ", "PLMAJ", "PAJ", "breslow"))) {
     stop(

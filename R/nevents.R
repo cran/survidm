@@ -1,38 +1,4 @@
-#' @title Count number of observed transitions.
-#'
-#' @description Given a dataset of class "survIDM", this function counts the number of observed transitions
-#' in the multi-state model.
-#'
-#' @param dataidm A dataframe including at least four columns named
-#' \code{time1}, \code{event1}, \code{Stime} and \code{event}, which correspond
-#' to disease free survival time, disease free survival indicator, time to death
-#' or censoring, and death indicator, respectively.
-#' @param state.names Names for the transition states. If \code{NULL} (default),
-#' transition states are named by \code{"healthy"}, \code{"illness"} and \code{"death"}.
-#'
-#' @details The colums of the dataset needs to have the format of class "survIDM", which holds
-#' the transition matrix of the multi-state model.
-#'
-#'
-#' @examples
-#'
-#' nevents(colonIDM)
-#'
-#' nevents(colonIDM, c('State1','State2', 'State3'))
-#'
-#' @usage nevents(dataidm, state.names=NULL)
-#'
-#' @author Luis Meira-Machado, Marta Sestelo and Gustavo Soutinho.
-#'
-#' @references
-#' L. Meira-Machado, J. de Una-Alvarez, C. Cadarso-Suarez, and P. Andersen. Multi-state models for the
-#' analysis of time to event data. Statistical Methods in Medical Research, 18:195-222, 2009.
-#'
-#' J. de Una-Alvarez and L. Meira-Machado. Nonparametric estimation of transition probabilities in
-#' the non-markov illness-death model: A comparative study. Biometrics, 71(2):364-375, 2015.
-#'
-#' L. Meira-Machado and M. Sestelo. Estimation in the progressive illness-death model: A nonexhaustive
-#' review. Biometrical Journal, 2018.
+
 
 nevents <- function (dataidm, state.names=NULL)
 {
@@ -60,7 +26,9 @@ nevents <- function (dataidm, state.names=NULL)
 
   colnames(tmat2) <- c(state.names)
   rownames(tmat2) <- state.names
-  tmat2[1, ] <- c(n00,     n01, n02)
+
+  #tmat2[1, ] <- c(n00,     n01, n02)
+  tmat2[1, ] <- c(n00,     n01-length(which(dataidm$event1 == 1 & dataidm$time1==0)), n02) #retirar casos em que time1=0 e event1=1
   tmat2[2, ] <- c(0,        n01-n12, n12)
   tmat2[3, ] <- c(0,        0,   n02+n12)
 
